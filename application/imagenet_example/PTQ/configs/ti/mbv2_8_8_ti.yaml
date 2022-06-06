@@ -1,0 +1,21 @@
+quantize:
+    backend: Ti
+    quantize_type: naive_ptq # support naive_ptq or advanced_ptq
+    cali_batchsize: 16
+    deploy:
+        output_path: onnx_models
+        model_name: mbv2_ti
+model:                    # architecture details
+    type: mobilenet_v2        # model name
+    kwargs:
+        num_classes: 1000
+    path: /opt/data/private/pretrain_models/mobilenetv2/mobilenetv2.pth.tar 
+data:
+    path: /root/Dataset/ILSVRC2012/
+    batch_size: 64
+    num_workers: 4
+    pin_memory: True
+    input_size: 224
+    test_resize: 256
+process:
+    seed: 1005

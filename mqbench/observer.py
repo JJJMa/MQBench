@@ -68,7 +68,7 @@ class ObserverBase(_ObserverBase):
         r"""Calculates the quantization parameters."""
         scale, zero_point = self._calculate_qparams(self.min_val, self.max_val)
         if self.pot_scale:
-            scale = pot_quantization(scale)
+            scale = pot_quantization(scale, 'ceil')
         scale.data = sync_tensor(scale).data
         zero_point.data = sync_tensor(zero_point).data
         return scale, zero_point
@@ -300,7 +300,9 @@ class PoTModeObserver(ObserverBase):
 
     def calculate_qparams(self):
         if self.quant_type is None:
-            raise ValueError('You should set the observer type before forward!')
+            # raise ValueError('You should set the observer type before forward!')
+            scale_range = 5
+            mth = 3
         else:
             scale_range = 1 if self.quant_type == 'input' else 5
             mth = 3 if self.quant_type == 'param' else 2

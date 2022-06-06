@@ -9,6 +9,8 @@ from mqbench.custom_quantizer import ModelQuantizer
 @register_model_quantizer(BackendType.PPLCUDA)
 @register_model_quantizer(BackendType.SNPE)
 @register_model_quantizer(BackendType.PPLW8A16)
+@register_model_quantizer(BackendType.Hipu)
+@register_model_quantizer(BackendType.Ti)
 class TotalINTQuantizer(ModelQuantizer):
     """There is only INT8 calculations in the model.
     We quantize the input tensors and output tensors of all layers,

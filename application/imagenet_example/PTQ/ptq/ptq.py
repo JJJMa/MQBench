@@ -16,6 +16,8 @@ backend_dict = {
     'Vitis': BackendType.Vitis,
     'ONNX_QNN': BackendType.ONNX_QNN,
     'PPLCUDA': BackendType.PPLCUDA,
+    'Hipu': BackendType.Hipu,
+    'Ti': BackendType.Ti,
 }
 
 
@@ -89,14 +91,20 @@ if __name__ == '__main__':
     elif config.quantize.quantize_type == 'naive_ptq':
         print('begin calibration now!')
         cali_data = load_calibrate_data(train_loader, cali_batchsize=config.quantize.cali_batchsize)
-        from mqbench.utils.state import enable_quantization, enable_calibration_woquantization
+        from mqbench.utils.state import enable_quantization, enable_calibration_woquantization, disable_all
         # do activation and weight calibration seperately for quick MSE per-channel for weight one
         model.eval()
+
+        disable_all(model)
         enable_calibration_woquantization(model, quantizer_type='act_fake_quant')
         for batch in cali_data:
             model(batch.cuda())
+
+        disable_all(model)
         enable_calibration_woquantization(model, quantizer_type='weight_fake_quant')
+        enable_calibration_woquantization(model, quantizer_type='bias_fake_quant')
         model(cali_data[0].cuda())
+
         print('begin quantization now!')
         enable_quantization(model)
         evaluate(val_loader, model)

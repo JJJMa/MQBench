@@ -32,6 +32,8 @@ __all__ = ['convert_deploy']
 @register_deploy_function(BackendType.NNIE)
 @register_deploy_function(BackendType.Vitis)
 @register_deploy_function(BackendType.OPENVINO)
+@register_deploy_function(BackendType.Hipu)
+@register_deploy_function(BackendType.Ti)
 def convert_merge_bn(model: GraphModule, **kwargs):
     logger.info("Merge BN for deploy.")
     nodes = list(model.graph.nodes)
@@ -54,6 +56,8 @@ def convert_merge_bn(model: GraphModule, **kwargs):
 @register_deploy_function(BackendType.NNIE)
 @register_deploy_function(BackendType.Vitis)
 @register_deploy_function(BackendType.OPENVINO)
+@register_deploy_function(BackendType.Hipu)
+@register_deploy_function(BackendType.Ti)
 def convert_onnx(model: GraphModule, input_shape_dict, dummy_input, onnx_model_path, **kwargs):
     logger.info("Export to onnx.")
     output_names = kwargs.get('output_names', [])

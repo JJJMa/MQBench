@@ -32,12 +32,14 @@ def sync_tensor(tensor):
 
 
 def pot_quantization(tensor: torch.Tensor, mode='round'):
+    assert mode in ['round', 'floor', 'ceil']
     log2t = torch.log2(tensor)
     if mode == 'round':
         log2t = (torch.round(log2t) - log2t).detach() + log2t
-    else:
-        assert mode == 'floor' 
+    elif mode == 'floor': 
         log2t = (torch.floor(log2t) - log2t).detach() + log2t
+    else:
+        log2t = (torch.ceil(log2t) - log2t).detach() + log2t
     return 2 ** log2t
 
 

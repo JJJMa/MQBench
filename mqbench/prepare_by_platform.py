@@ -51,6 +51,8 @@ class BackendType(Enum):
     Tengine_u8 = "Tengine_u8"
     Tensorrt_NLP = "Tensorrt_NLP"
     Academic_NLP = "Academic_NLP"
+    Hipu = "Hipu"
+    Ti = 'Ti'
 
 
 ParamsTable = {
@@ -64,8 +66,8 @@ ParamsTable = {
                                  default_weight_observer=MinMaxObserver,
                                  default_act_observer=EMAMinMaxObserver),
     BackendType.Tensorrt:   dict(qtype='affine',     # noqa: E241
-                                 w_qscheme=QuantizeScheme(symmetry=True, per_channel=True, pot_scale=False, bit=8, symmetric_range=True),
-                                 a_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=False, bit=8, symmetric_range=True),
+                                 w_qscheme=QuantizeScheme(symmetry=True, per_channel=True, pot_scale=False, bit=8, symmetric_range=True, factory_kwargs={'not_calc_quant_min_max':True}),
+                                 a_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=False, bit=8, symmetric_range=True, factory_kwargs={'not_calc_quant_min_max':True}),
                                  default_weight_quantize=LearnableFakeQuantize,
                                  default_act_quantize=LearnableFakeQuantize,
                                  default_weight_observer=MinMaxObserver,
@@ -119,7 +121,23 @@ ParamsTable = {
                                  default_act_quantize=LearnableFakeQuantize,
                                  default_weight_observer=MinMaxObserver,
                                  default_act_observer=EMAMinMaxObserver),
-}
+    BackendType.Hipu:       dict(qtype='affine',     # noqa: E241
+                                 w_qscheme=QuantizeScheme(symmetry=True, per_channel=True, pot_scale=True, bit=8, symmetric_range=True, factory_kwargs={'not_calc_quant_min_max':True}),
+                                 a_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
+                                 default_weight_quantize=LearnableFakeQuantize,
+                                 default_act_quantize=LearnableFakeQuantize,
+                                 default_weight_observer=MinMaxObserver,
+                                 default_act_observer=PoTModeObserver),
+    BackendType.Ti:         dict(qtype='affine',     # noqa: E241
+                                 w_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
+                                 #    dw_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
+                                 #    b_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
+                                 a_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
+                                 default_weight_quantize=LearnableFakeQuantize,
+                                 default_act_quantize=LearnableFakeQuantize,
+                                 default_weight_observer=PoTModeObserver,
+                                 default_act_observer=PoTModeObserver),
+    }
 ParamsTable[BackendType.Tensorrt_NLP] = ParamsTable[BackendType.Tensorrt]
 ParamsTable[BackendType.Academic_NLP] = ParamsTable[BackendType.Academic]
 
@@ -127,7 +145,7 @@ ObserverDict = {
     'MinMaxObserver':           MinMaxObserver,                                    # noqa: E241
     'EMAMinMaxObserver':        EMAMinMaxObserver,        # More general choice.   # noqa: E241
     'MinMaxFloorObserver':      MinMaxFloorObserver,      # For Vitis HW           # noqa: E241
-    'PoTModeObserver':          PoTModeObserver,   # For Vitis HW           # noqa: E241
+    'PoTModeObserver':          PoTModeObserver,          # For Vitis HW           # noqa: E241
     'EMAQuantileObserver':      EMAQuantileObserver,      # Quantile observer.     # noqa: E241
     'ClipStdObserver':          ClipStdObserver,          # Usually used for DSQ.  # noqa: E241
     'LSQObserver':              LSQObserver,              # Usually used for LSQ.  # noqa: E241
@@ -136,7 +154,7 @@ ObserverDict = {
 }
 
 FakeQuantizeDict = {
-    'FixedFakeQuantize': FixedFakeQuantize,      # Unlearnable scale/zeropoint  # noqa: E241
+    'FixedFakeQuantize':     FixedFakeQuantize,      # Unlearnable scale/zeropoint  # noqa: E241
     'LearnableFakeQuantize': LearnableFakeQuantize,  # Learnable scale/zeropoint    # noqa: E241
     'NNIEFakeQuantize':      NNIEFakeQuantize,       # Quantize function for NNIE   # noqa: E241
     'DoReFaFakeQuantize':    DoReFaFakeQuantize,     # Dorefa                       # noqa: E241

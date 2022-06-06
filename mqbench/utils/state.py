@@ -16,8 +16,8 @@ def enable_calibration_woquantization(model, quantizer_type='fake_quant'):
     for name, submodule in model.named_modules():
         if isinstance(submodule, torch.quantization.FakeQuantizeBase):
             if quantizer_type not in name: 
-                submodule.disable_observer()
-                submodule.disable_fake_quant()
+                # submodule.disable_observer()
+                # submodule.disable_fake_quant()
                 continue
             logger.debug('Enable observer and Disable quant: {}'.format(name))
             submodule.enable_observer()
