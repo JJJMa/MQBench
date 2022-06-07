@@ -130,12 +130,10 @@ ParamsTable = {
                                  default_act_observer=PoTModeObserver),
     BackendType.Ti:         dict(qtype='affine',     # noqa: E241
                                  w_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
-                                 #    dw_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
-                                 #    b_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
                                  a_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
                                  default_weight_quantize=LearnableFakeQuantize,
                                  default_act_quantize=LearnableFakeQuantize,
-                                 default_weight_observer=PoTModeObserver,
+                                 default_weight_observer=MinMaxObserver,
                                  default_act_observer=PoTModeObserver),
     }
 ParamsTable[BackendType.Tensorrt_NLP] = ParamsTable[BackendType.Tensorrt]
