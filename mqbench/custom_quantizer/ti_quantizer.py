@@ -55,7 +55,7 @@ class TiQuantizer(TotalINTQuantizer):
         return module
 
     def _contain_dwconv(self, mod):
-        if isinstance(mod, (torch.nn.Conv2d, torch.nn.intrinsic.qat.modules.conv_fused.ConvBn2d)) and mod.groups == mod.in_channels:
+        if isinstance(mod, (torch.nn.Conv2d,)) and mod.groups == mod.in_channels:
             return True
         elif any(self._contain_dwconv(m) for n, m in mod.named_children()):
             return True
