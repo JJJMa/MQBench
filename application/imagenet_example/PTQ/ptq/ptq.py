@@ -51,7 +51,9 @@ def deploy(model, config):
     convert_deploy(model, backend_type, {
                    'input': [1, 3, 224, 224]}, output_path=output_path, model_name=model_name, deploy_to_qlinear=deploy_to_qlinear)
 
-
+# PYTHONPATH=/home/ry/Codes/DJI-Files/MQBench python ptq.py --config /home/ry/Codes/DJI-Files/MQBench/application/imagenet_example/PTQ/configs/ti/r18_8_8_ti.yaml
+# PYTHONPATH=/home/ry/Codes/DJI-Files/MQBench python ptq.py --config /home/ry/Codes/DJI-Files/MQBench/application/imagenet_example/PTQ/configs/ti/mbv2_8_8_ti.yaml
+# PYTHONPATH=/home/ry/Codes/DJI-Files/MQBench python ptq.py --config /home/ry/Codes/DJI-Files/MQBench/application/imagenet_example/PTQ/configs/ti/mbv2_8_8_ti_brecq.yaml
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ImageNet Solver')
     parser.add_argument('--config', required=True, type=str)
@@ -61,11 +63,18 @@ if __name__ == '__main__':
     seed_all(config.process.seed)
     # load_model
     model = load_model(config.model)
-    if hasattr(config, 'quantize'):
-        model = get_quantize_model(model, config)
     model.cuda()
     # load_data
     train_loader, val_loader = load_data(**config.data)
+    evaluate(val_loader, model)
+    model.train()
+    print(next(model.parameters()).device)
+
+    if hasattr(config, 'quantize'):
+        model = get_quantize_model(model, config)
+    model.cuda()
+    print(next(model.parameters()).device)
+
     # evaluate
     if not hasattr(config, 'quantize'):
         evaluate(val_loader, model)
@@ -97,6 +106,8 @@ if __name__ == '__main__':
 
         disable_all(model)
         enable_calibration_woquantization(model, quantizer_type='act_fake_quant')
+        print(next(model.parameters()).device)
+
         for batch in cali_data:
             model(batch.cuda())
 

@@ -18,7 +18,7 @@ extra_prepare_dict:
             p: 2.4
     deploy:
         output_path: onnx_models
-        model_name: res18_brecq_ti
+        model_name: mbv2_brecq_ti
 quantize:
     backend: Ti
     quantize_type: advanced_ptq # support naive_ptq or advanced_ptq
@@ -32,15 +32,14 @@ quantize:
         b_range: [20,2]
         keep_gpu: True
         round_mode: learned_hard_sigmoid
-        prob: 0.5
+        prob: 1.0
     # deploy:
     #     output_path: onnx_models
     #     model_name: res18_hipu
 model:                    # architecture details
-    type: resnet18        # model name
+    type: mobilenet_v2        # model name
     kwargs:
         num_classes: 1000
-    path: /home/ry/.cache/torch/hub/checkpoints/resnet18-f37072fd.pth
 data:
     path: /data/renyan/datasets/imagenet
     batch_size: 64
@@ -56,7 +55,7 @@ process:
 
 
 
-# resnet18
-#  * Acc@1 69.760 Acc@5 89.082 fp32 torchvision
-#  * Acc@1 69.384 Acc@5 88.882 brecq 8-bit
-#  * Acc@1 69.392 Acc@5 88.950 qdrop 8-bit
+# mobilenet_v2
+#  * Acc@1 71.870 Acc@5 90.294 fp32 torchvision 
+#  * Acc@1 70.918 Acc@5 89.904 int8 qdrop
+#  * Acc@1 70.582 Acc@5 89.850 int8 brecq

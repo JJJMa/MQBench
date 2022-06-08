@@ -9,9 +9,9 @@ model:                    # architecture details
     type: mobilenet_v2        # model name
     kwargs:
         num_classes: 1000
-    path: /opt/data/private/pretrain_models/mobilenetv2/mobilenetv2.pth.tar 
+    path: /home/ry/.cache/torch/hub/checkpoints/mobilenet_v2-b0353104.pth
 data:
-    path: /root/Dataset/ILSVRC2012/
+    path: /data/renyan/datasets/imagenet
     batch_size: 64
     num_workers: 4
     pin_memory: True
