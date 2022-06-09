@@ -9,7 +9,8 @@ model:                    # architecture details
     type: mobilenet_v2        # model name
     kwargs:
         num_classes: 1000
-    path: /opt/data/private/pretrain_models/mobilenetv2/mobilenetv2.pth.tar 
+    path: /opt/data/private/pretrain_models/mobilenetv2/mobilenet_v2-b0353104.pth
+    # path: /opt/data/private/pretrain_models/mobilenetv2/mobilenetv2.pth.tar
 data:
     path: /root/Dataset/ILSVRC2012/
     batch_size: 64

@@ -10,12 +10,12 @@ from torch.quantization import (
 
 from mqbench.utils.registry import register_model_quantizer
 from mqbench.prepare_by_platform import BackendType
-from mqbench.custom_quantizer import TotalINTQuantizer
+from mqbench.custom_quantizer import HipuQuantizer
 from mqbench.utils.logger import logger
 
 
 @register_model_quantizer(BackendType.Ti)
-class TiQuantizer(TotalINTQuantizer):
+class TiQuantizer(HipuQuantizer):
     """
     The quantization style used in this code is Power-Of-2, Symmetric, Per-Tensor Quantization for both Weights and Activations. \
     There is also an option to use Per-Channel Weight Quantization for Depthwise Convolution Layers.
@@ -48,6 +48,10 @@ class TiQuantizer(TotalINTQuantizer):
                     reassign[name].weight_fake_quant.activation_post_process.ch_axis = 0
                     reassign[name].weight_fake_quant.qscheme = torch.per_channel_symmetric
                     reassign[name].weight_fake_quant.is_per_channel = True
+                    reassign[name].bias_fake_quant.ch_axis = 0
+                    reassign[name].bias_fake_quant.activation_post_process.ch_axis = 0
+                    reassign[name].bias_fake_quant.qscheme = torch.per_channel_symmetric
+                    reassign[name].bias_fake_quant.is_per_channel = True
                     logger.info("Switch DWconv fake quant to per-channel: " + new_scope)
         for key, value in reassign.items():
             module._modules[key] = value

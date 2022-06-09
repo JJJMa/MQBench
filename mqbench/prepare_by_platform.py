@@ -6,7 +6,8 @@ import torch
 from torch.fx import Tracer
 from torch.fx.graph_module import GraphModule
 from torch.quantization.quantize_fx import _swap_ff_with_fxff
-from torch.quantization import QConfig
+# from torch.quantization import QConfig
+from mqbench.quantization import QConfig
 
 
 from mqbench.fake_quantize import (
@@ -95,10 +96,13 @@ ParamsTable = {
                                  default_act_observer=EMAMinMaxObserver),
     BackendType.Vitis:      dict(qtype='vitis',     # noqa: E241
                                  w_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
+                                 b_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
                                  a_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
                                  default_weight_quantize=TqtFakeQuantize,
+                                 default_bias_quantize=TqtFakeQuantize,
                                  default_act_quantize=TqtFakeQuantize,
                                  default_weight_observer=MinMaxFloorObserver,
+                                 default_bias_observer=MinMaxFloorObserver,
                                  default_act_observer=PoTModeObserver),
     BackendType.ONNX_QNN:   dict(qtype='affine',     # noqa: E241
                                  w_qscheme=QuantizeScheme(symmetry=False, per_channel=False, pot_scale=False, bit=8),
@@ -123,17 +127,25 @@ ParamsTable = {
                                  default_act_observer=EMAMinMaxObserver),
     BackendType.Hipu:       dict(qtype='affine',     # noqa: E241
                                  w_qscheme=QuantizeScheme(symmetry=True, per_channel=True, pot_scale=True, bit=8, symmetric_range=True, factory_kwargs={'not_calc_quant_min_max':True}),
+                                 b_qscheme=QuantizeScheme(symmetry=True, per_channel=True, pot_scale=True, bit=32),
                                  a_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
                                  default_weight_quantize=LearnableFakeQuantize,
+                                 # scale of bias will be fixed as the product of scale of weight and input
+                                 default_bias_quantize=FixedFakeQuantize,
                                  default_act_quantize=LearnableFakeQuantize,
                                  default_weight_observer=MinMaxObserver,
+                                 default_bias_observer=MinMaxObserver,
                                  default_act_observer=PoTModeObserver),
     BackendType.Ti:         dict(qtype='affine',     # noqa: E241
                                  w_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
+                                 b_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=16),
                                  a_qscheme=QuantizeScheme(symmetry=True, per_channel=False, pot_scale=True, bit=8),
                                  default_weight_quantize=LearnableFakeQuantize,
+                                 # scale of bias will be fixed as the product of scale of weight and input
+                                 default_bias_quantize=FixedFakeQuantize,
                                  default_act_quantize=LearnableFakeQuantize,
                                  default_weight_observer=MinMaxObserver,
+                                 default_bias_observer=MinMaxObserver,
                                  default_act_observer=PoTModeObserver),
     }
 ParamsTable[BackendType.Tensorrt_NLP] = ParamsTable[BackendType.Tensorrt]
@@ -237,6 +249,9 @@ def get_qconfig_by_platform(deploy_backend: BackendType, extra_qparams: Dict):
         else:
             logger.info("Weight Quant Scheme is overrided!")
             w_qscheme = QuantizeScheme(**w_qscheme)
+
+        b_qscheme = backend_params.get('b_qscheme', None)
+
         a_qscheme = extra_qparams.get('a_qscheme', None)
         if a_qscheme is None:
             a_qscheme = backend_params['a_qscheme']
@@ -252,13 +267,17 @@ def get_qconfig_by_platform(deploy_backend: BackendType, extra_qparams: Dict):
     # Get weight / act fake quantize function and params. And bias fake quantizer if needed(Vitis)
     if not w_fakequantize:
         w_fakequantize = backend_params['default_weight_quantize']
+        b_fakequantize = backend_params.get('default_bias_quantize', None)
     w_fakeq_params = extra_qparams.get('w_fakeq_params', {})
+    b_fakeq_params = extra_qparams.get('b_fakeq_params', {})
+
     if not a_fakequantize:
         a_fakequantize = backend_params['default_act_quantize']
     a_fakeq_params = extra_qparams.get('a_fakeq_params', {})
     # Get default observer type.
     if not w_observer:
         w_observer = backend_params['default_weight_observer']
+        b_observer = backend_params.get('default_bias_observer', None)
     if not a_observer:
         a_observer = backend_params['default_act_observer']
 
@@ -272,10 +291,14 @@ def get_qconfig_by_platform(deploy_backend: BackendType, extra_qparams: Dict):
     logger.info('Activation Qconfig:\n    FakeQuantize: {} Params: {}\n'
                 '    Oberver:      {} Params: {}'.format(a_fakequantize.__name__, a_fakeq_params,
                                                          a_observer.__name__, str(a_qscheme)))
-    if backend_params['qtype'] == 'vitis':
-        logger.info('Bias Qconfig:\n    TqtFakeQuantize with MinMaxObserver')
-
-    return QConfig(activation=a_qconfig, weight=w_qconfig)
+    if b_fakequantize:
+        b_qconfig = b_fakequantize.with_args(observer=b_observer, **b_fakeq_params, **b_qscheme.to_observer_params())
+        logger.info('Bias Qconfig:\n    FakeQuantize: {} Params: {}\n'
+                    '    Oberver:      {} Params: {}'.format(b_fakequantize.__name__, b_fakeq_params,
+                                                            b_observer.__name__, str(b_qscheme)))
+        return QConfig(activation=a_qconfig, weight=w_qconfig, bias=b_qconfig)
+    else:
+        return QConfig(activation=a_qconfig, weight=w_qconfig)
 
 
 class CustomedTracer(Tracer):

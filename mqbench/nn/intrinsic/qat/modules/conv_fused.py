@@ -13,7 +13,7 @@ from typing import TypeVar
 
 
 import mqbench.nn.qat as qnnqat
-from mqbench.quantization.default_bias_fake_quant import bias_fake_quantizer
+# from mqbench.quantization.default_bias_fake_quant import bias_fake_quantizer
 
 _BN_CLASS_MAP = {
     1: nn.BatchNorm1d,
@@ -57,7 +57,13 @@ class _ConvBnNd(nn.modules.conv._ConvNd, _FusedModule):
             self.bias = Parameter(torch.empty(out_channels))
         else:
             self.register_parameter('bias', None)
-        self.bias_fake_quant = bias_fake_quantizer()
+
+        if self.qconfig.bias() is None:
+            self.bias_fake_quant = nn.Identity()
+        else:
+            self.bias_fake_quant = self.qconfig.bias()   
+            self.input_fake_quant = None
+
         self.reset_bn_parameters()
 
         # this needs to be called after reset_bn_parameters,
@@ -117,6 +123,9 @@ class _ConvBnNd(nn.modules.conv._ConvNd, _FusedModule):
             full_bias = (conv_bias - self.bn.running_mean) / running_std * self.bn.weight + self.bn.bias 
         else:
             full_bias = (conv_bias - self.bn.running_mean) / running_std 
+        if self.qconfig.bias() and self.input_fake_quant:
+            self.bias_fake_quant.scale = self.weight_fake_quant.scale.data * self.input_fake_quant.scale.data
+            self.bias_fake_quant.disable_observer()
         quant_bias = self.bias_fake_quant(full_bias)
         conv_with_bias = self._conv_forward(input, scaled_weight, quant_bias)
         conv_orig = (conv_with_bias - full_bias.reshape(bias_shape)) / scale_factor.reshape(bias_shape) + conv_bias.reshape(bias_shape)

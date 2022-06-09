@@ -2,9 +2,9 @@ quantize:
     backend: Vitis
     quantize_type: naive_ptq # support naive_ptq or advanced_ptq
     cali_batchsize: 16
-    # deploy:
-    #     output_path: onnx_models
-    #     model_name: res18_vitis
+    deploy:
+        output_path: onnx_models
+        model_name: res18_vitis
 model:                    # architecture details
     type: resnet18        # model name
     kwargs:

@@ -148,7 +148,8 @@ class MinMaxObserver(ObserverBase):
             new_axis_list[self.ch_axis] = 0
             new_axis_list[0] = self.ch_axis
             y = x.permute(new_axis_list)
-            y = torch.flatten(y, start_dim=1)
+            # y = torch.flatten(y, start_dim=1)
+            y = y.view(y.shape[0], -1)
             min_val_cur, max_val_cur = torch._aminmax(y, 1)
         self.min_val = torch.min(self.min_val, min_val_cur)
         self.max_val = torch.max(self.max_val, max_val_cur)

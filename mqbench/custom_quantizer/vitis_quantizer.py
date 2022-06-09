@@ -2,12 +2,14 @@ import operator
 from typing import List, NoReturn
 
 import torch
+import torch.nn as nn
 import torch.nn.intrinsic as nni
 from torch.fx import GraphModule
 from torch.quantization.quantize_fx import _fuse_fx
 
 import mqbench.nn.intrinsic as qnni 
 import mqbench.nn.intrinsic.qat as qnniqat
+import mqbench.nn.qat as qnnqat
 from mqbench.utils.logger import logger
 from mqbench.utils.registry import register_model_quantizer
 from mqbench.prepare_by_platform import BackendType
@@ -27,6 +29,8 @@ class VitisQuantizer(ModelQuantizer):
     def __init__(self, extra_quantizer_dict, extra_fuse_dict):
         super().__init__(extra_quantizer_dict, extra_fuse_dict)
         self.additional_qat_module_mapping = {
+            nn.Conv2d: qnnqat.Conv2d,
+            nn.Linear: qnnqat.Linear,
             # Intrinsic modules:
             nni.ConvBn2d: qnniqat.ConvBn2d,
             nni.ConvBnReLU2d: qnniqat.ConvBnReLU2d,
