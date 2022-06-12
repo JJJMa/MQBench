@@ -15,8 +15,9 @@ from torchvision.models import *
 
 def load_model(config):
     model = globals()[config['type']](**config['kwargs'])
-    checkpoint = torch.load(config.path, map_location='cpu')
-    if 'model' in checkpoint:
-        checkpoint = checkpoint['model']
-    model.load_state_dict(checkpoint)
+    if config.get('path', None):
+        checkpoint = torch.load(config.path, map_location='cpu')
+        if 'model' in checkpoint:
+            checkpoint = checkpoint['model']
+        model.load_state_dict(checkpoint)
     return model

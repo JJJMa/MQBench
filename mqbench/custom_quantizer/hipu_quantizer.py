@@ -14,6 +14,7 @@ from torch.quantization import (
 from torch.quantization.quantize_fx import (
     _fuse_fx
 )
+import operator
 
 from mqbench.utils.registry import register_model_quantizer
 from mqbench.prepare_by_platform import BackendType
@@ -58,14 +59,21 @@ class HipuQuantizer(TotalINTQuantizer):
         model = self._insert_fake_quantize_for_act_quant(model, qconfig)
 
         # TODO
-        # self._binding_act_quant_to_module(model)
+        self._binding_act_quant_to_module(model)
         return model
     
     def _binding_act_quant_to_module(self, model: GraphModule):
         nodes = list(model.graph.nodes)
         modules = dict(model.named_modules())
         for node in nodes:
-            if (node.op == "call_module" and isinstance(modules[node.target], self.module_contain_weight_bias)):
-                modules[node.target].input_fake_quant = modules[node.args[0].target]
-                logger.info(f"Binding act quant node: {node.args[0].target} to {node.target}.")
+            if node.op == "call_module" and isinstance(modules[node.target], self.module_contain_weight_bias):
+                # I'm not sure if it's safe at present. 
+                modules[node.target].input_fake_quant_scale = modules[node.args[0].target].scale
+                logger.info(f"Binding act quant node: [{node.args[0].target}] to Conv/Fc [{node.target}].")
+
+            elif (node.op == "call_function" and node.target == operator.add) \
+                or (node.op == "call_function" and node.target == torch.cat):
+                input_node_list = self._flatten_args(node.args)
+                assert len(input_node_list) == 2
+                logger.info(f"Binding act quant node: [{input_node_list[0].target}] and [{input_node_list[1].target}] to Add/Concat: [{node.name}].")
         return
